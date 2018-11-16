@@ -56,11 +56,16 @@ class IW_connection(imaplib.IMAP4):
         if iw_connector:
             self.xatom('X-ICEWARP-SERVER iwconnector')
 
+    def get_flags(self,msgid):
+        '''fetch flags from msg
+        '''
+        return imaplib.ParseFlags(self.fetch(msgid,"FLAGS")[1][0])
+
     def get_msgid_by_subject(self,subject, folder='INBOX'):
         """try to find msgID by subject in specific folder"""
 
         #select folder
-        selected, folderid = self.select(folder)
+        selected = self.select(folder)[0]
         if selected != "OK":
             raise self.error("unable to select this folder: %s" % folder)
 
@@ -69,12 +74,19 @@ class IW_connection(imaplib.IMAP4):
         if search != "OK":
             raise self.error("error in SEARCH (subject): %s" % subject)
         if (msgid[0]).decode() != '':
-            return (msgid[0]).decode()              # vracet int nebo str????
+            #return (msgid[0]).decode()              # vracet int nebo str????
+            return msgid[0]
         else:
             #raise self.error("nothing found!")    # nebo vracet -1????
             return -1
 
-class email:
+    def add_flags(self, msgid, flags):
+        
+        return self.xatom('store '+msgid.decode()+' +flags ' + flags )
+
+
+
+class Email:
     """instance of email in server
     
     priority:
@@ -90,8 +102,9 @@ class email:
         self.text = text
         self.priority = priority
         self.mime_msg = self._set_mime_msg()
-        self.ID = {}
+        self.ID = None
         self.folder = 'INBOX'
+        self.flags = None
 
     def _set_mime_msg(self):
         msg = MIMEText(self.text)
@@ -114,7 +127,7 @@ class email:
             print(str(err))
             raise RuntimeError("can't setup connection to SMTP server:", err)
 
-             
+          
       
         
 

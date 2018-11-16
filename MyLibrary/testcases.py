@@ -11,22 +11,51 @@ psw = 'a'
 username = user + '@' + host
 
 
+msgs = []
+folders = []
 
+def send_email(host, username):
+    msg = IMAPTester.Email(host, username, username)
+    msg.send()
+    time.sleep(1)
+    msg.ID = conn.get_msgid_by_subject(msg.subject)
+    msg.flags = conn.get_flags(msg.ID)
+    count = len(msgs)
+    msgs.append(msg)
+    return count
 
-# connect to server   
+# 1. connect to server   
 try:
     conn = IMAPTester.IW_connection(host, user, psw)
 except Exception as err:
     print("can't connect to server")
     exit()
 
-#send test MSG
-msg1 = IMAPTester.email(host, username, username)
-msg1.send()
-time.sleep(1)
-msg1.ID = conn.get_msgid_by_subject(msg1.subject)
 
 
-#conn.logout()
+
+
+'''
+# 2. send test email = SEND, RECEIVE, SEARCH
+try:
+    msgid = send_email(host, username)
+    if (msgs[msgid]).ID == -1:
+        print("[ERROR]  receive / search this msg: %s" % (msgs[msgid]).subject)
+    else:
+        print("[OK]  send / receive / search")
+except ConnectionRefusedError as err:
+    print("[ERROR]  send msg")
+    print(err)
+''' 
+
+# 3. set FLAG (\\Flagged & \\Completed)
+conn.select()
+response = conn.add_flags(b'2','\\Flagged')
+print(response)
+
+
+conn.logout()
 
 # create folder
+
+
