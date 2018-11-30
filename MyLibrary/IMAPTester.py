@@ -80,10 +80,65 @@ class IW_connection(imaplib.IMAP4):
             #raise self.error("nothing found!")    # nebo vracet -1????
             return -1
 
-    def add_flags(self, msgid, flags):
-        
-        return self.xatom('store '+msgid.decode()+' +flags ' + flags )
+    def add_flag(self, msgid, flags):
+        state, response =  self._simple_command('STORE', msgid.decode(), '+flags', flags)
+        if state == "OK":
+            if flags.encode() in self.get_flags(msgid):
+                return True
+            else:
+                return False
+        else:
+            return False
+       
+    def remove_flag(self, msgid, flags):
+        return self._simple_command('STORE', msgid.decode(), '-flags', flags)
 
+    def delete_message(self, msgid, folder = 'INBOX'):
+        self.select(folder)
+        return self.add_flag(msgid, '\\Deleted')
+
+    def create_folder(self, folder):
+        state, response =  self._simple_command('CREATE', folder)
+        if state == "OK":
+            if self.select(folder)[0] == "OK":
+                return True
+            else:
+                return False
+        else:
+            return False
+        
+    def delete_folder(self, folder):
+        state, response =  self._simple_command('DELETE', folder)
+        if state == "OK":
+            return True
+        else:
+            if response[0] == b'DELETE Mailbox does not exist':
+                return True
+            else:
+                return False
+
+    def rename_folder(self, old, new):
+        try:
+            state, response =  self._simple_command('RENAME', old, new)
+            if state == "OK":
+                return True
+            else:
+                print(response)
+                return False                
+        except imaplib.IMAP4.error as err:
+            return False
+        #    raise RuntimeError("unknow error: ", err)
+        
+    def xlist(self, directory='""', pattern='*'):
+        """List mailbox names in directory matching pattern.
+
+        (typ, [data]) = <instance>.list(directory='""', pattern='*')
+
+        'data' is list of LIST responses.
+        """
+        name = 'XLIST'
+        typ, dat = self._simple_command(name, directory, pattern)
+        return self._untagged_response(typ, dat, name)
 
 
 class Email:
